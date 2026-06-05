@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy — Meridian</title>
+  <meta name="description" content="Meridian privacy policy. No backend, no tracking, no data leaves your browser." />
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <header>
+    <div class="container">
+      <a href="/" class="logo">Meridian</a>
+      <nav>
+        <a href="/privacy" aria-current="page">Privacy Policy</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="prose">
+    <div class="container">
+      <h1>Privacy Policy</h1>
+      <p class="meta">Last updated: 2026-06-04</p>
+
+      <p>Meridian is a browser extension that overlays Twitch chat on YouTube and Kick watch pages. It runs entirely in your browser. <strong>It has no backend servers and does not collect, transmit, or sell any personal data.</strong></p>
+
+      <h2>What the extension reads</h2>
+      <ul>
+        <li>
+          <strong>A Twitch OAuth token (only if you click "Connect Twitch").</strong> Meridian links your account through Twitch's official OAuth flow (<code>chrome.identity.launchWebAuthFlow</code>) — it does <strong>not</strong> read any cookies. The resulting access token is stored locally in your browser and sent <strong>only</strong> to Twitch's own servers (<code>id.twitch.tv</code> for validation, <code>api.twitch.tv</code> for your display name, and <code>irc-ws.chat.twitch.tv</code> for chat connection). It is never sent to any third party or to the extension author. Click "Disconnect" to delete it.
+        </li>
+        <li>
+          <strong>Your channel mappings</strong> (YouTube handle → Twitch channel) that you enter in the extension's settings.
+        </li>
+        <li>
+          <strong>The current page's channel handle</strong> (e.g. <code>@SomeChannel</code>), read from the page's DOM to look up the corresponding Twitch channel from your mappings.
+        </li>
+      </ul>
+
+      <h2>What the extension stores</h2>
+      <p>All data is stored locally via <code>chrome.storage.local</code>:</p>
+      <ul>
+        <li>Your preferences (overlay position, size, opacity, font size, mappings, hotkeys, blocked words, etc.).</li>
+        <li>A 24-hour cache of public emote metadata from 7TV, BetterTTV, and FrankerFaceZ.</li>
+      </ul>
+      <p>Nothing is uploaded anywhere. Clearing the extension or your browser data removes all of it.</p>
+
+      <h2>Background processing</h2>
+      <p>Meridian's background logic runs as a <strong>Manifest V3 service worker</strong> — an ephemeral, event-driven worker that the browser starts on demand and shuts down when idle. It keeps <strong>no data in memory</strong> between activations: every action (validating your OAuth token, fetching your display name, reading a live viewer count) reads what it needs from <code>chrome.storage.local</code>, does its work, and lets the worker sleep again. There is no persistent background process, and nothing about your browsing is accumulated.</p>
+
+      <h2>Network requests Meridian makes</h2>
+      <table>
+        <thead>
+          <tr><th>Host</th><th>Purpose</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>id.twitch.tv</code></td><td>OAuth consent screen and token validation.</td></tr>
+          <tr><td><code>api.twitch.tv</code></td><td>Fetch your Twitch display name and resolve channel IDs.</td></tr>
+          <tr><td><code>irc-ws.chat.twitch.tv</code></td><td>Connect to Twitch IRC chat (anonymous if not logged in).</td></tr>
+          <tr><td><code>7tv.io</code></td><td>Fetch public 7TV emote sets.</td></tr>
+          <tr><td><code>api.betterttv.net</code>, <code>cdn.betterttv.net</code></td><td>Fetch public BetterTTV emote sets.</td></tr>
+          <tr><td><code>api.frankerfacez.com</code></td><td>Fetch public FrankerFaceZ emote sets.</td></tr>
+        </tbody>
+      </table>
+      <p>Meridian does <strong>not</strong> contact any servers operated by the extension's author.</p>
+
+      <h2>Anonymous mode</h2>
+      <p>By default — until you click "Connect Twitch" — the extension connects to Twitch IRC as an anonymous reader. You can view chat without sending messages and without any account data being read.</p>
+
+      <h2>Children's privacy</h2>
+      <p>Meridian does not knowingly collect any information from anyone. Because the extension collects no personal data whatsoever, it is safe for users of all ages.</p>
+
+      <h2>Changes to this policy</h2>
+      <p>If this policy changes materially, the updated version will be published at this URL with a new "Last updated" date. Continued use of the extension after a policy change constitutes acceptance of the updated policy.</p>
+
+      <h2>Contact</h2>
+      <p>Questions or concerns? File an issue on the <a href="https://github.com" target="_blank" rel="noopener">project's GitHub repository</a>.</p>
+    </div>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>&copy; 2026 Meridian &bull; <a href="/privacy">Privacy Policy</a></p>
+    </div>
+  </footer>
+</body>
+</html>

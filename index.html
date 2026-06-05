@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Meridian — Twitch Chat Overlay for YouTube & Kick</title>
+  <meta name="description" content="Overlay live Twitch chat on YouTube and Kick. Draggable, resizable, no backend, no tracking." />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <div class="container">
+      <a href="." class="logo">Meridian</a>
+      <nav>
+        <a href="/privacy">Privacy Policy</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container">
+        <h1>Twitch Chat, Anywhere You Watch</h1>
+        <p class="tagline">Overlay live Twitch chat on YouTube and Kick &mdash; draggable, resizable, and entirely in your browser. No backend, no tracking, no account required to read.</p>
+        <a class="cta" href="https://chrome.google.com/webstore" target="_blank" rel="noopener">Add to Chrome</a>
+      </div>
+    </section>
+
+    <section class="features">
+      <div class="container">
+        <h2>Features</h2>
+        <div class="grid">
+          <div class="card">
+            <h3>Overlay &amp; Docked Modes</h3>
+            <p>Float a transparent panel over the video, or dock it inside the site's native chat frame with a <strong>[Site | Twitch]</strong> tab switcher. Survives theater and fullscreen.</p>
+          </div>
+          <div class="card">
+            <h3>Rich Emote Support</h3>
+            <p>Native Twitch emotes plus 7TV, BetterTTV, and FrankerFaceZ &mdash; global and per-channel sets, each provider individually toggleable.</p>
+          </div>
+          <div class="card">
+            <h3>Timeline Highlights</h3>
+            <p>A chat-activity wave drawn over the YouTube seekbar. Emote surges are pinned as clickable markers &mdash; click to seek straight to the hype moment.</p>
+          </div>
+          <div class="card">
+            <h3>Chat Delay Sync</h3>
+            <p>Dial in 0&ndash;600 s of chat delay to sync messages with a delayed stream or re-broadcast.</p>
+          </div>
+          <div class="card">
+            <h3>Auto Channel Mapping</h3>
+            <p>Automatically maps YouTube channel handles and Kick slugs to the right Twitch channel. Override per-page anytime.</p>
+          </div>
+          <div class="card">
+            <h3>Private by Design</h3>
+            <p>No servers, no analytics, no data leaves your browser. Read chat anonymously without connecting an account. <a href="/privacy">Full privacy policy &rarr;</a></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="permissions">
+      <div class="container">
+        <h2>Permissions</h2>
+        <table>
+          <thead>
+            <tr><th>Permission</th><th>Why it's needed</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>storage</code></td><td>Save your preferences and a 24-hour emote cache.</td></tr>
+            <tr><td><code>identity</code></td><td>Run Twitch's official OAuth flow when you click <strong>Connect Twitch</strong>. No cookies read.</td></tr>
+            <tr><td><code>activeTab</code></td><td>Read the current tab's host to show per-site settings.</td></tr>
+            <tr><td>youtube.com, kick.com</td><td>Inject the overlay on watch and channel pages.</td></tr>
+            <tr><td>*.twitch.tv</td><td>Validate the OAuth token, fetch your display name, connect to chat.</td></tr>
+            <tr><td>7tv.io, betterttv.net, frankerfacez.com</td><td>Fetch public emote sets.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>&copy; 2026 Meridian &bull; <a href="/privacy">Privacy Policy</a></p>
+    </div>
+  </footer>
+</body>
+</html>
