@@ -121,6 +121,29 @@
   .span-2 { grid-column: span 2; }
   .span-6 { grid-column: span 6; }
 
+  /* complete feature list */
+  .feature-list { margin-top: 58px; padding-top: 42px; border-top: 1px solid var(--border-1); }
+  .feature-list-head { display: flex; align-items: end; justify-content: space-between; gap: 24px; }
+  .feature-list-head h3 { margin: 12px 0 0; color: var(--fg-1); font-size: clamp(24px, 3vw, 32px); line-height: 1.12; letter-spacing: -.025em; }
+  .feature-list-head p { margin: 10px 0 0; max-width: 46em; color: var(--fg-3); font-size: var(--text-md); }
+  .feature-groups { margin-top: 28px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px 34px; }
+  .feature-group { min-width: 0; }
+  .feature-group h4 {
+    display: flex; align-items: center; gap: 8px;
+    margin: 0 0 12px; color: var(--fg-1); font-size: var(--text-md); font-weight: 600; letter-spacing: -.01em;
+  }
+  .feature-group h4::before {
+    content: ""; width: 7px; height: 7px; border-radius: 50%; flex: none;
+    background: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft);
+  }
+  .feature-group ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+  .feature-group li { position: relative; padding-left: 18px; color: var(--fg-2); font-size: var(--text-sm); line-height: var(--lh-normal); }
+  .feature-group li::before {
+    content: ""; position: absolute; left: 1px; top: .72em;
+    width: 6px; height: 6px; border: 1px solid var(--accent-hover); border-radius: 50%;
+    background: color-mix(in oklab, var(--accent) 18%, transparent);
+  }
+
   /* feature: emotes row */
   .emote-row { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
   .prov { display: inline-flex; align-items: center; gap: 9px; padding: 8px 13px; border-radius: var(--r-md); background: var(--bg-3); border: 1px solid var(--border-2); font-size: var(--text-sm); font-weight: 600; color: var(--fg-1); }
@@ -519,12 +542,17 @@
     .hero-stage { min-height: 0; margin-top: 8px; }
     .bento { grid-template-columns: repeat(2, 1fr); }
     .span-3, .span-2, .span-6 { grid-column: span 2; }
+    .feature-list-head { align-items: flex-start; flex-direction: column; }
+    .feature-groups { grid-template-columns: repeat(2, 1fr); }
     .nav-links a.text { display: none; }
   }
   @media (max-width: 560px) {
     .wrap { padding: 0 18px; }
+    .nav-links .btn-ghost { display: none; }
+    .hero-glow { width: 100vw; right: 0; }
     .bento { grid-template-columns: 1fr; }
     .span-3, .span-2, .span-6 { grid-column: span 1; }
+    .feature-groups { grid-template-columns: 1fr; gap: 24px; }
     .cta-box { padding: 44px 24px; }
     .meridian-root { width: min(344px, calc(100vw - 40px)); }
   }
@@ -833,6 +861,88 @@
           <div class="seek-mock"><div class="played" style="width:58%"></div><div class="knob" style="left:58%"></div></div>
         </div>
       </article>
+    </div>
+
+    <div class="feature-list" id="complete-features">
+      <div class="feature-list-head">
+        <div>
+          <span class="eyebrow"><span class="dot"></span> Complete list</span>
+          <h3>Everything Meridian can do.</h3>
+          <p>The visual cards above show the big ideas. This is the full user-facing feature surface, grouped tightly so you can scan it without a card for every setting.</p>
+        </div>
+      </div>
+
+      <div class="feature-groups">
+        <section class="feature-group">
+          <h4>Overlay &amp; Display</h4>
+          <ul>
+            <li>Floating, draggable, resizable chat panel over the video.</li>
+            <li>Docked mode with a Site/Twitch tab switcher inside the native chat frame.</li>
+            <li>Saved display mode per layout: Default, Theater, and Fullscreen.</li>
+            <li>Auto show/hide chat when chat activity surges.</li>
+            <li>Floating emotes over the player during chat surges.</li>
+            <li>Default docked visibility per layout.</li>
+            <li>Kick support for Default and Fullscreen layouts.</li>
+          </ul>
+        </section>
+
+        <section class="feature-group">
+          <h4>Chat</h4>
+          <ul>
+            <li>Send messages after connecting Twitch.</li>
+            <li>Live Twitch chat with badges, colors, and display names.</li>
+            <li>Native Twitch, 7TV, BetterTTV, and FrankerFaceZ emotes.</li>
+            <li>Global and channel emote sets with per-provider toggles.</li>
+            <li>Emote and @-mention autocomplete with Tab and Enter support.</li>
+            <li>Typed emotes become inline image chips.</li>
+            <li>Chat delay from real time to 600 seconds.</li>
+            <li>Mention highlighting for messages that @-mention you.</li>
+            <li>Highlight channel-points messages.</li>
+            <li>Up/Down message history recall.</li>
+            <li>Blocklist for hiding messages by word.</li>
+            <li>Show/hide deleted messages.</li>
+          </ul>
+        </section>
+
+        <section class="feature-group">
+          <h4>Chat Intensity</h4>
+          <ul>
+            <li>YouTube chat intensity wave over the seekbar.</li>
+            <li>Emote surge markers for repeated emote spam.</li>
+            <li>Click markers to seek straight to high-energy moments.</li>
+          </ul>
+        </section>
+
+        <section class="feature-group">
+          <h4>Channels</h4>
+          <ul>
+            <li>Auto-detects YouTube channels and Kick slugs.</li>
+            <li>Joins the mapped Twitch channel automatically.</li>
+            <li>Channel mappings editor using handle = twitch_channel.</li>
+            <li>Per-page Twitch channel override from the overlay header.</li>
+          </ul>
+        </section>
+
+        <section class="feature-group">
+          <h4>Account &amp; Privacy</h4>
+          <ul>
+            <li>Watch chat anonymously with no login required.</li>
+            <li>Connect Twitch only when you want to send messages.</li>
+          </ul>
+        </section>
+
+        <section class="feature-group">
+          <h4>Appearance &amp; Hotkeys</h4>
+          <ul>
+            <li>Opacity and font-size controls.</li>
+            <li>Background color, blur, and corner radius controls.</li>
+            <li>Text legibility modes with optional bold text.</li>
+            <li>Panel drop shadow and outline toggles.</li>
+            <li>Configurable toggle-visibility hotkey.</li>
+            <li>Configurable focus-input hotkey.</li>
+          </ul>
+        </section>
+      </div>
     </div>
   </div>
 </section>
