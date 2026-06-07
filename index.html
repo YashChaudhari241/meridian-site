@@ -1,88 +1,994 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Meridian — Twitch Chat Overlay for YouTube & Kick</title>
-  <meta name="description" content="Overlay live Twitch chat on YouTube and Kick. Draggable, resizable, no backend, no tracking." />
-  <link rel="stylesheet" href="style.css" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Meridian — Twitch chat on YouTube</title>
+<meta name="description" content="Overlay live Twitch chat — emotes, badges and all — on YouTube and Kick. Draggable, resizable, no backend, no tracking." />
+<link rel="icon" type="image/svg+xml" href="assets/meridian-icon.svg" />
+<link rel="stylesheet" href="styles/tokens.css" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg-0);
+    color: var(--fg-2);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: var(--lh-normal);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+  a { color: inherit; text-decoration: none; }
+  ::selection { background: var(--accent-soft); color: var(--fg-1); }
+
+  /* ---------- layout ---------- */
+  .wrap { width: 100%; max-width: 1180px; margin: 0 auto; padding: 0 28px; }
+
+  /* ---------- nav ---------- */
+  header.nav {
+    position: sticky; top: 0; z-index: 50;
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    background: color-mix(in oklab, var(--bg-0) 72%, transparent);
+    border-bottom: 1px solid var(--border-1);
+  }
+  .nav-inner { display: flex; align-items: center; height: 64px; gap: 28px; }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand img { width: 28px; height: 28px; border-radius: 8px; }
+  .brand .name { font-weight: 600; font-size: 16px; color: var(--fg-1); letter-spacing: -.01em; }
+  .nav-links { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  .nav-links a.text { padding: 8px 12px; color: var(--fg-3); font-size: var(--text-sm); font-weight: 500; border-radius: var(--r-md); transition: color var(--motion) var(--ease), background var(--motion) var(--ease); }
+  .nav-links a.text:hover { color: var(--fg-1); background: var(--bg-2); }
+
+  /* ---------- buttons ---------- */
+  .btn {
+    display: inline-flex; align-items: center; gap: 9px;
+    font-family: var(--font-sans); font-size: var(--text-sm); font-weight: 600;
+    padding: 10px 16px; border-radius: var(--r-md); cursor: pointer;
+    border: 1px solid transparent; transition: all var(--motion) var(--ease);
+    white-space: nowrap; line-height: 1;
+  }
+  .btn svg { width: 16px; height: 16px; flex: none; }
+  .btn-primary { background: var(--accent); color: var(--on-accent); box-shadow: 0 1px 0 rgba(255,255,255,.08) inset, var(--shadow-sm); }
+  .btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); }
+  .btn-primary:active { background: var(--accent-press); transform: translateY(1px); }
+  .btn-ghost { background: var(--bg-2); color: var(--fg-1); border-color: var(--border-2); }
+  .btn-ghost:hover { background: var(--bg-3); border-color: var(--border-strong); }
+  .btn-lg { padding: 14px 22px; font-size: var(--text-md); border-radius: 12px; }
+  .btn-lg svg { width: 18px; height: 18px; }
+
+  /* ---------- eyebrow ---------- */
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: var(--text-xs); font-weight: 600; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--fg-3);
+    padding: 6px 12px 6px 8px; border: 1px solid var(--border-2); border-radius: var(--r-pill);
+    background: var(--bg-2); white-space: nowrap;
+  }
+  .eyebrow .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; padding: 76px 0 92px; overflow: hidden; }
+  .hero-glow {
+    position: absolute; inset: -20% -10% auto auto; width: 760px; height: 620px;
+    background: radial-gradient(closest-side, color-mix(in oklab, var(--violet-500) 30%, transparent), transparent 70%);
+    filter: blur(20px); pointer-events: none; z-index: 0; opacity: .55;
+  }
+  .hero-grid { position: relative; z-index: 1; display: grid; grid-template-columns: 1.04fr 1fr; gap: 56px; align-items: center; }
+  h1.hero-title {
+    font-size: clamp(40px, 5.4vw, 64px); font-weight: 700; line-height: 1.02;
+    letter-spacing: -.03em; color: var(--fg-1); margin: 22px 0 0;
+  }
+  h1.hero-title .grad {
+    background: linear-gradient(105deg, var(--violet-300), var(--violet-500) 60%, var(--violet-600));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .hero-sub { margin: 22px 0 0; font-size: var(--text-lg); line-height: var(--lh-normal); color: var(--fg-2); max-width: 30em; }
+  .hero-cta { margin-top: 30px; display: flex; flex-wrap: wrap; gap: 12px; }
+  .hero-note { margin-top: 18px; display: flex; align-items: center; gap: 8px; font-size: var(--text-sm); color: var(--fg-3); }
+  .hero-note svg { width: 15px; height: 15px; color: var(--success); }
+
+  /* logo strip */
+  .strip { border-top: 1px solid var(--border-1); border-bottom: 1px solid var(--border-1); background: var(--bg-1); }
+  .strip-inner { padding: 22px 0; }
+  .strip-flow { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+  .flow-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .flow-label { font-size: var(--text-xs); font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--fg-4); margin-right: 2px; }
+  .flow-arrow { color: var(--fg-4); display: inline-flex; }
+  .flow-arrow svg { width: 18px; height: 18px; }
+  .src-badge { display: inline-flex; align-items: center; gap: 7px; font-size: var(--text-sm); font-weight: 600; color: var(--fg-2); padding: 6px 12px; border: 1px solid var(--border-2); border-radius: var(--r-pill); background: var(--bg-2); }
+  .src-badge .sw { width: 9px; height: 9px; border-radius: 50%; }
+
+  /* ---------- features ---------- */
+  section.features { padding: 100px 0 40px; }
+  .sec-head { max-width: 640px; }
+  .sec-head h2 { font-size: clamp(28px, 3.6vw, 40px); font-weight: 700; letter-spacing: -.025em; color: var(--fg-1); margin: 14px 0 0; line-height: 1.08; }
+  .sec-head p { margin: 16px 0 0; font-size: var(--text-lg); color: var(--fg-3); }
+  .bento { margin-top: 48px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; }
+  .card {
+    background: var(--bg-2); border: 1px solid var(--border-1); border-radius: var(--r-xl);
+    padding: 26px; position: relative; overflow: hidden; transition: border-color var(--motion) var(--ease), transform var(--motion) var(--ease);
+  }
+  .card:hover { border-color: var(--border-strong); transform: translateY(-2px); }
+  .card .ic { width: 38px; height: 38px; border-radius: var(--r-md); display: grid; place-items: center; background: var(--accent-soft); color: var(--accent-hover); border: 1px solid color-mix(in oklab, var(--accent) 22%, transparent); }
+  .card .ic svg { width: 19px; height: 19px; }
+  .card h3 { font-size: var(--text-xl); font-weight: 600; letter-spacing: -.015em; color: var(--fg-1); margin: 18px 0 0; }
+  .card p { margin: 9px 0 0; font-size: var(--text-base); color: var(--fg-3); line-height: var(--lh-normal); }
+  .card .help { margin-top: 12px; font-size: var(--text-sm); color: var(--fg-4); }
+  .span-3 { grid-column: span 3; }
+  .span-2 { grid-column: span 2; }
+  .span-6 { grid-column: span 6; }
+
+  /* feature: emotes row */
+  .emote-row { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+  .prov { display: inline-flex; align-items: center; gap: 9px; padding: 8px 13px; border-radius: var(--r-md); background: var(--bg-3); border: 1px solid var(--border-2); font-size: var(--text-sm); font-weight: 600; color: var(--fg-1); }
+  .prov .chip { width: 18px; height: 18px; border-radius: 5px; }
+  .emote-tray { display: flex; gap: 6px; margin-top: 18px; flex-wrap: wrap; }
+  .emote-tray .e { width: 30px; height: 30px; border-radius: 7px; box-shadow: var(--shadow-sm); }
+
+  /* feature: delay big mono */
+  .delay-demo { margin-top: 22px; display: flex; align-items: baseline; gap: 10px; }
+  .delay-demo .v { font-family: var(--font-mono); font-size: 52px; font-weight: 600; color: var(--fg-1); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .delay-demo .u { font-size: var(--text-md); color: var(--fg-3); }
+  .delay-scale { margin-top: 16px; height: 6px; border-radius: var(--r-pill); background: var(--bg-4); position: relative; overflow: hidden; }
+  .delay-scale .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 22%; background: var(--accent); border-radius: var(--r-pill); }
+  .delay-range { margin-top: 8px; display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: var(--text-xs); color: var(--fg-4); }
+
+  /* feature: overlay / docked tune */
+  .tune { margin-top: 20px; display: flex; flex-direction: column; gap: 16px; }
+  .tune-row .lab { display: flex; justify-content: space-between; font-size: var(--text-sm); margin-bottom: 8px; }
+  .tune-row .lab .n { color: var(--fg-2); font-weight: 500; }
+  .tune-row .lab .vv { font-family: var(--font-mono); font-weight: 600; color: var(--accent); }
+  .tune-bar { height: 6px; border-radius: var(--r-pill); background: var(--bg-4); position: relative; }
+  .tune-bar .f { position: absolute; left: 0; top: 0; bottom: 0; background: var(--accent); border-radius: var(--r-pill); }
+  .tune-bar .knob { position: absolute; top: 50%; width: 14px; height: 14px; border-radius: 50%; background: var(--fg-1); transform: translate(-50%, -50%); box-shadow: var(--shadow-sm); }
+  /* mode tab switcher */
+  .mode-tabs { margin-top: 20px; display: inline-flex; gap: 3px; padding: 3px; background: var(--bg-3); border: 1px solid var(--border-2); border-radius: 11px; }
+  .mode-tabs .t { display: inline-flex; align-items: center; gap: 7px; padding: 7px 13px; border-radius: 8px; font-size: var(--text-sm); font-weight: 600; color: var(--fg-3); cursor: default; transition: color var(--motion) var(--ease), background var(--motion) var(--ease); }
+  .mode-tabs .t svg { width: 15px; height: 15px; }
+  .mode-tabs .t.on { background: var(--accent); color: var(--on-accent); box-shadow: var(--shadow-sm); }
+
+  /* ---------- CTA ---------- */
+  section.cta { padding: 80px 0 100px; }
+  .cta-box { position: relative; overflow: hidden; border: 1px solid var(--border-2); border-radius: 22px; background: var(--bg-1); padding: 64px 56px; text-align: center; }
+  .cta-box .glow { position: absolute; inset: auto 0 -60% 0; height: 80%; background: radial-gradient(closest-side, color-mix(in oklab, var(--violet-500) 26%, transparent), transparent 70%); filter: blur(20px); pointer-events: none; }
+  .cta-box h2 { position: relative; font-size: clamp(28px, 4vw, 44px); font-weight: 700; letter-spacing: -.03em; color: var(--fg-1); margin: 0; line-height: 1.05; }
+  .cta-box p { position: relative; margin: 16px auto 0; max-width: 36em; font-size: var(--text-lg); color: var(--fg-3); }
+  .cta-box .hero-cta { position: relative; justify-content: center; }
+
+  /* ---------- footer ---------- */
+  footer.foot { border-top: 1px solid var(--border-1); background: var(--bg-1); }
+  .foot-inner { display: flex; align-items: center; gap: 20px; padding: 30px 0; flex-wrap: wrap; }
+  .foot-brand { display: flex; align-items: center; gap: 10px; }
+  .foot-brand img { width: 24px; height: 24px; border-radius: 7px; }
+  .foot-brand .n { font-weight: 600; color: var(--fg-1); font-size: 15px; }
+  .foot-links { margin-left: auto; display: flex; align-items: center; gap: 22px; }
+  .foot-links a { font-size: var(--text-sm); color: var(--fg-3); transition: color var(--motion) var(--ease); }
+  .foot-links a:hover { color: var(--fg-1); }
+  .foot-copy { width: 100%; padding-bottom: 30px; font-size: var(--text-sm); color: var(--fg-4); }
+
+  /* ============================================================
+     REAL EXTENSION UI — mock mounts
+     Markup + styles below are reproduced verbatim from the
+     extension's src/overlay.css (the .meridian-* classes), so the
+     components look identical to the shipping product. Only the
+     data is dummy, and emotes are drawn as colored rounded
+     rectangles in place of the real emote images.
+     ============================================================ */
+
+  /* ---- hero: the chat overlay shown standalone, floating over an ambient glow ---- */
+  .hero-stage {
+    position: relative; z-index: 0;          /* trap the overlay's huge z-index inside */
+    display: grid; place-items: center;
+    min-height: 480px;
+  }
+  .hero-stage::before {
+    content: ""; position: absolute; z-index: -1;
+    width: 78%; height: 66%; border-radius: 48px;
+    background: radial-gradient(closest-side, rgba(130,87,255,.30), transparent 72%);
+    filter: blur(46px); pointer-events: none;
+  }
+
+  /* ============ overlay.css (verbatim, .meridian-* ) ============ */
+  .meridian-root {
+    position: relative;
+    width: 344px;
+    height: 472px;
+    --meridian-opacity: 0.55;
+    --meridian-font: 13px;
+    --meridian-header-h: 30px;
+    --meridian-input-h: 44px;
+    --meridian-banner-h: 19px;
+    --meridian-blur: 6px;
+    --meridian-radius: 14px;
+    color: #F5F5F6;
+    font-family: "Geist", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: var(--meridian-font);
+    background: transparent;
+    user-select: none;
+    border-radius: var(--meridian-radius);
+  }
+  .meridian-bg {
+    position: absolute;
+    left: 0; right: 0;
+    top: 0; bottom: 0;          /* mock: bars revealed, bg fills the panel */
+    background: rgba(18, 18, 21, var(--meridian-opacity));
+    backdrop-filter: blur(var(--meridian-blur)) saturate(1.3);
+    -webkit-backdrop-filter: blur(var(--meridian-blur)) saturate(1.3);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--meridian-radius);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
+    z-index: 0;
+    pointer-events: none;
+  }
+  .meridian-header,
+  .meridian-input-wrap {
+    position: absolute;
+    left: 0; right: 0;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 5px;
+    box-sizing: border-box;
+    background: rgba(13, 13, 16, 0.92);
+    backdrop-filter: blur(12px) saturate(1.3);
+    -webkit-backdrop-filter: blur(12px) saturate(1.3);
+    z-index: 2;
+    opacity: 1;                 /* mock: always shown */
+  }
+  .meridian-header {
+    top: 0;
+    height: var(--meridian-header-h);
+    padding: 5px 5px;
+    gap: 4px;
+    cursor: grab;
+    font-size: 11px;
+    border-top-left-radius: var(--meridian-radius);
+    border-top-right-radius: var(--meridian-radius);
+    border-bottom: 1px solid rgba(255,255,255,0.10);
+  }
+  .meridian-input-wrap {
+    bottom: 0;
+    height: var(--meridian-input-h);
+    padding: 7px 8px;
+    gap: 6px;
+    align-items: center;
+    border-bottom-left-radius: var(--meridian-radius);
+    border-bottom-right-radius: var(--meridian-radius);
+    border-top: 1px solid rgba(255,255,255,0.10);
+  }
+  .meridian-channel-field {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    position: relative;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid #38383F;
+    border-radius: 6px;
+    box-sizing: border-box;
+    height: 20px;
+    padding: 0 22px 0 5px;
+    min-width: 0;
+    white-space: nowrap;
+    cursor: grab;
+  }
+  .meridian-channel-scroll { display: flex; align-items: center; flex: 1 1 auto; min-width: 0; overflow: hidden; }
+  .meridian-channel-prefix {
+    font-size: 10px; color: #5C5C65; flex: none;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    white-space: nowrap;
+  }
+  .meridian-channel {
+    flex: 1 1 auto;
+    min-width: 0;
+    cursor: text;
+    background: transparent;
+    border: none;
+    color: #F5F5F6;
+    font: inherit;
+    font-weight: 600;
+    font-size: 11px;
+    line-height: 1.25;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    outline: none;
+    padding: 1px 1px 1px 3px;
+    white-space: nowrap;
+  }
+  .meridian-channel-follow {
+    position: absolute; right: 3px;
+    background: transparent; border: none; color: #B4B4BC; cursor: pointer;
+    width: 15px; height: 15px; border-radius: 5px; line-height: 0;
+    display: inline-flex; align-items: center; justify-content: center; flex: none; padding: 0;
+  }
+  .meridian-channel-follow svg { width: 10px; height: 10px; fill: none; stroke: currentColor; stroke-width: 2; display: block; }
+  .meridian-delay {
+    display: flex; align-items: center; gap: 1px;
+    background: rgba(255,255,255,0.05); border: 1px solid #38383F; border-radius: 6px; padding: 0; flex: none;
+  }
+  .meridian-delay-icon { display: none; }
+  .meridian-delay-val {
+    font-size: 10.5px; font-weight: 600; width: 22px; text-align: center;
+    font-variant-numeric: tabular-nums; background: transparent; border: none; outline: none;
+    color: #F5F5F6; font-family: ui-monospace, "SF Mono", Menlo, monospace; padding: 0;
+  }
+  .meridian-delay .meridian-btn {
+    width: 17px; height: 18px; display: inline-flex; align-items: center; justify-content: center;
+    padding: 0; border-radius: 5px; color: #B4B4BC; font-size: 12px;
+  }
+  .meridian-btn {
+    background: transparent; border: none; color: #82828C; cursor: pointer;
+    width: 21px; height: 21px; display: inline-flex; align-items: center; justify-content: center;
+    padding: 0; border-radius: 6px; font-size: 12.5px; line-height: 1; flex: none;
+    transition: background 130ms cubic-bezier(.2,.6,.2,1), color 130ms cubic-bezier(.2,.6,.2,1);
+  }
+  .meridian-btn:hover { background: rgba(255,255,255,0.08); color: #F5F5F6; }
+  .meridian-viewers {
+    position: absolute;
+    top: calc(var(--meridian-header-h) + 8px);
+    right: 10px;
+    display: inline-flex;
+    align-items: center; gap: 4px;
+    padding: 3px 7px 3px 5px;
+    background: rgba(8, 8, 11, 0.52);
+    border: 1px solid rgba(255, 255, 255, 0.11);
+    color: rgba(255, 255, 255, 0.62);
+    border-radius: 999px;
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 10.5px; font-weight: 600; line-height: 1; letter-spacing: 0.01em;
+    z-index: 4; pointer-events: none;
+  }
+  .meridian-viewers-eye { display: block; flex: none; fill: none; stroke: rgba(255, 255, 255, 0.45); }
+  .meridian-messages {
+    position: absolute;
+    left: 0; right: 0;
+    top: var(--meridian-header-h);
+    bottom: var(--meridian-input-h);
+    overflow: hidden;           /* mock: clip the auto-scrolling feed */
+    padding: 4px 8px;
+    box-sizing: border-box;
+    user-select: text;
+    z-index: 1;
+  }
+  .meridian-msg {
+    padding: 2px 0;
+    line-height: 1.35;
+    word-wrap: break-word;
+    overflow-wrap: anywhere;
+  }
+  .meridian-name { font-weight: 700; }
+  .meridian-sep { opacity: 0.6; margin: 0 4px; }
+  /* Emotes drawn as colored rounded rectangles (stand-ins for emote images). */
+  .meridian-emote {
+    display: inline-block;
+    vertical-align: middle;
+    height: 1.6em;
+    margin: -3px 1px;
+    border-radius: 4px;
+  }
+  .meridian-input {
+    flex: 1;
+    display: block;
+    box-sizing: border-box;
+    height: 28px;
+    background: rgba(255,255,255,0.06);
+    box-shadow: inset 0 0 0 1px #38383F;
+    color: #F5F5F6;
+    border-radius: 9px;
+    padding: 0 10px;
+    font: inherit;
+    line-height: 28px;
+    outline: none;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .meridian-input:empty::before { content: attr(data-placeholder); opacity: 0.45; }
+  .meridian-send {
+    background: #8257FF; color: #fff; border: none; border-radius: 9px;
+    height: 28px; padding: 0 9px; cursor: pointer; flex: none;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: background 130ms cubic-bezier(.2,.6,.2,1);
+  }
+  .meridian-send svg { display: block; }
+  .meridian-send:hover { background: #9270FF; }
+
+  /* New messages are appended at the bottom and the feed jumps to the bottom
+     instantly (no smooth-scroll) — exactly like the live overlay. Driven by JS. */
+
+  /* ============ timeline wave + emote highlights (verbatim) ============ */
+  .wave-demo {
+    position: relative; z-index: 0;          /* trap the wave/tooltip z-index inside the card */
+    margin-top: 20px;
+    min-height: 200px;                        /* room for the wave + lane-stacked emote + popup above */
+    border-radius: var(--r-lg);
+    border: 1px solid var(--border-1);
+    background:
+      radial-gradient(120% 90% at 50% 120%, rgba(130,87,255,.10), transparent 60%),
+      linear-gradient(180deg, #0e0e12, #0a0a0e);
+    overflow: hidden;
+  }
+  .wave-demo.wide { min-height: 236px; }
+  /* faux YouTube seekbar pinned to the bottom */
+  .seek-mock { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(255,255,255,.16); }
+  .seek-mock .played { position: absolute; left: 0; top: 0; bottom: 0; background: var(--youtube); }
+  .seek-mock .knob { position: absolute; top: 50%; width: 12px; height: 12px; border-radius: 50%; background: #fff; transform: translate(-50%, -50%); box-shadow: 0 0 6px rgba(0,0,0,.6); }
+
+  .meridian-wave-layer {
+    position: absolute;
+    left: 0; right: 0;
+    bottom: 6px;
+    height: 86px;
+    pointer-events: none;
+    overflow: visible;
+    z-index: 1000;
+  }
+  .meridian-wave-svg {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 30px; width: 100%;
+    display: block;
+    filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.35));
+  }
+  .meridian-wave-path { vector-effect: non-scaling-stroke; }
+  .meridian-wave-topline {
+    fill: none;
+    stroke-width: 1.4px;
+    stroke-opacity: 0.92;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+    vector-effect: non-scaling-stroke;
+  }
+  .meridian-wave-emotes { position: absolute; inset: 0; overflow: visible; }
+  .meridian-wave-stem {
+    position: absolute; width: 2px; transform: translateX(-50%);
+    opacity: 0.5; pointer-events: none;
+  }
+  .meridian-wave-dot {
+    position: absolute; width: 5px; height: 5px; border-radius: 50%;
+    transform: translate(-50%, 50%); opacity: 0.65; pointer-events: none;
+  }
+  .meridian-wave-emote {
+    position: absolute;
+    transform: translate(-50%, 50%);
+    pointer-events: auto;
+    cursor: pointer;
+    line-height: 0;
+    z-index: 5;
+  }
+  /* emote stand-in: colored rounded rectangle styled exactly like the real marker image */
+  .meridian-wave-emote .m-emote {
+    display: block;
+    height: 16px;
+    width: 16px;
+    border-radius: 4px;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.8), 0 1px 3px rgba(0, 0, 0, 0.55);
+    transition: transform 120ms cubic-bezier(.2,.6,.2,1), box-shadow 120ms ease;
+  }
+  .meridian-wave-emote:hover { z-index: 50; }
+  .meridian-wave-emote:hover .m-emote {
+    transform: scale(1.18);
+    box-shadow: 0 0 0 3px rgba(130, 87, 255, 0.3), 0 6px 20px rgba(0, 0, 0, 0.45);
+  }
+  .meridian-wave-badge {
+    position: absolute; top: -5px; right: -6px; left: auto;
+    background: #8257FF; color: #fff;
+    font: 700 7px/1 ui-monospace, "SF Mono", Menlo, monospace;
+    padding: 1px 2px; border-radius: 999px; pointer-events: none; border: 1px solid #0C0C0F;
+  }
+  /* ---- surge stats tooltip (verbatim) ---- */
+  .meridian-surge-tip {
+    position: absolute;
+    transform: translateX(-50%);
+    box-sizing: border-box;
+    width: 188px;
+    background: #1B1B20;
+    border: 1px solid #38383F;
+    border-radius: 10px;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
+    padding: 9px 10px;
+    z-index: 2147483000;
+    pointer-events: none;
+    font-family: var(--font-sans, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
+    text-align: left;
+    line-height: 1.25;
+  }
+  .meridian-surge-tip-head { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; }
+  .meridian-surge-tip-head .m-emote { width: 22px; height: 22px; border-radius: 6px; flex: none; }
+  .meridian-surge-tip-htxt { min-width: 0; }
+  .meridian-surge-tip-name { font-size: 12px; font-weight: 600; color: #F5F5F6; letter-spacing: -.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .meridian-surge-tip-time { font-size: 10.5px; color: #82828C; font-family: ui-monospace, "SF Mono", Menlo, monospace; margin-top: 1px; }
+  .meridian-surge-tip-stats { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .meridian-surge-tip-rate { font-size: 16px; font-weight: 700; color: #F5F5F6; font-family: ui-monospace, "SF Mono", Menlo, monospace; line-height: 1; letter-spacing: -.02em; }
+  .meridian-surge-tip-rate span { font-size: 9.5px; color: #82828C; font-weight: 500; margin-left: 2px; }
+  .meridian-surge-tip-uniq { font-size: 10.5px; color: #82828C; }
+  .meridian-surge-tip-uniq b { color: #C6B0FF; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  .meridian-surge-tip-cluster {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 7px 3px 5px; margin-bottom: 7px; border-radius: 999px;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+  }
+  .meridian-surge-tip-stack { display: inline-flex; }
+  .meridian-surge-tip-stack .m-emote { width: 17px; height: 17px; border-radius: 5px; border: 1.5px solid #16161a; }
+  .meridian-surge-tip-stack .m-emote + .m-emote { margin-left: -7px; }
+  .meridian-surge-tip-more { font-size: 10px; font-weight: 700; color: #F5F5F6; font-family: ui-monospace, "SF Mono", Menlo, monospace; padding-right: 1px; }
+
+  @media (max-width: 920px) {
+    .hero-grid { grid-template-columns: 1fr; gap: 40px; }
+    .hero-stage { min-height: 0; margin-top: 8px; }
+    .bento { grid-template-columns: repeat(2, 1fr); }
+    .span-3, .span-2, .span-6 { grid-column: span 2; }
+    .nav-links a.text { display: none; }
+  }
+  @media (max-width: 560px) {
+    .wrap { padding: 0 18px; }
+    .bento { grid-template-columns: 1fr; }
+    .span-3, .span-2, .span-6 { grid-column: span 1; }
+    .cta-box { padding: 44px 24px; }
+    .meridian-root { width: min(344px, calc(100vw - 40px)); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+  }
+</style>
 </head>
 <body>
-  <header>
-    <div class="container">
-      <a href="." class="logo">Meridian</a>
-      <nav>
-        <a href="https://github.com/YashChaudhari241/meridian" target="_blank" rel="noopener">GitHub</a>
-        <a href="privacy/">Privacy Policy</a>
-      </nav>
-    </div>
-  </header>
 
-  <main>
-    <section class="hero">
-      <div class="container">
-        <h1>Twitch Chat, Anywhere You Watch</h1>
-        <p class="tagline">Overlay live Twitch chat on YouTube and Kick &mdash; draggable, resizable, and entirely in your browser. No backend, no tracking, no account required to read.</p>
-        <a class="cta" href="https://chrome.google.com/webstore" target="_blank" rel="noopener">Add to Chrome</a>
+<!-- ============ NAV ============ -->
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="index.html">
+      <img src="assets/meridian-icon.svg" alt="Meridian" />
+      <span class="name">Meridian</span>
+    </a>
+    <nav class="nav-links">
+      <a class="text" href="#features">Features</a>
+      <a class="text" href="privacy/index.html">Privacy</a>
+      <a class="btn btn-ghost" href="https://github.com/YashChaudhari241/meridian" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.48 2 2 6.58 2 12.25c0 4.53 2.87 8.37 6.84 9.73.5.1.68-.22.68-.49l-.01-1.9c-2.78.62-3.37-1.22-3.37-1.22-.46-1.18-1.11-1.5-1.11-1.5-.91-.64.07-.62.07-.62 1 .07 1.53 1.06 1.53 1.06.89 1.56 2.34 1.11 2.91.85.09-.66.35-1.11.63-1.36-2.22-.26-4.55-1.14-4.55-5.07 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.3.1-2.71 0 0 .84-.27 2.75 1.05a9.36 9.36 0 0 1 5 0c1.91-1.32 2.75-1.05 2.75-1.05.55 1.41.2 2.45.1 2.71.64.72 1.03 1.63 1.03 2.75 0 3.94-2.34 4.81-4.57 5.06.36.32.68.94.68 1.9l-.01 2.81c0 .27.18.6.69.49A10.03 10.03 0 0 0 22 12.25C22 6.58 17.52 2 12 2Z"/></svg>
+        GitHub
+      </a>
+      <a class="btn btn-primary" href="https://chromewebstore.google.com/detail/meridian-%E2%80%94-twitch-chat-fo/kopddoeajboelfpckaepggclkjekfoch" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><path d="M12 16v6M8.5 10 3.3 7M15.5 10 20.7 7"/></svg>
+        Add to Chrome
+      </a>
+    </nav>
+  </div>
+</header>
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <h1 class="hero-title">Twitch chat,<br /><span class="grad">on YouTube &amp; Kick.</span></h1>
+      <p class="hero-sub">Meridian overlays a live Twitch chat — emotes, badges and all — right on top of the video you're watching. Built for tournament re-broadcasts, esports VODs, and co-streams.</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary btn-lg" href="https://chromewebstore.google.com/detail/meridian-%E2%80%94-twitch-chat-fo/kopddoeajboelfpckaepggclkjekfoch" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><path d="M12 16v6M8.5 10 3.3 7M15.5 10 20.7 7"/></svg>
+          Add to Chrome
+        </a>
+        <a class="btn btn-ghost btn-lg" href="https://github.com/YashChaudhari241/meridian" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.48 2 2 6.58 2 12.25c0 4.53 2.87 8.37 6.84 9.73.5.1.68-.22.68-.49l-.01-1.9c-2.78.62-3.37-1.22-3.37-1.22-.46-1.18-1.11-1.5-1.11-1.5-.91-.64.07-.62.07-.62 1 .07 1.53 1.06 1.53 1.06.89 1.56 2.34 1.11 2.91.85.09-.66.35-1.11.63-1.36-2.22-.26-4.55-1.14-4.55-5.07 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.3.1-2.71 0 0 .84-.27 2.75 1.05a9.36 9.36 0 0 1 5 0c1.91-1.32 2.75-1.05 2.75-1.05.55 1.41.2 2.45.1 2.71.64.72 1.03 1.63 1.03 2.75 0 3.94-2.34 4.81-4.57 5.06.36.32.68.94.68 1.9l-.01 2.81c0 .27.18.6.69.49A10.03 10.03 0 0 0 22 12.25C22 6.58 17.52 2 12 2Z"/></svg>
+          View on GitHub
+        </a>
       </div>
-    </section>
+      <div class="hero-note">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+        Free and open source. Works anonymously — connect Twitch only if you want to chat.
+      </div>
+    </div>
 
-    <section class="features">
-      <div class="container">
-        <h2>Features</h2>
-        <div class="grid">
-          <div class="card">
-            <h3>Overlay &amp; Docked Modes</h3>
-            <p>Float a transparent panel over the video, or dock it inside the site's native chat frame with a <strong>[Site | Twitch]</strong> tab switcher. Survives theater and fullscreen.</p>
+    <!-- the chat overlay, shown standalone (verbatim structure from content.js) -->
+    <div class="hero-stage">
+      <div class="meridian-root mock" id="heroOverlay">
+        <div class="meridian-bg"></div>
+        <div class="meridian-header">
+          <span class="meridian-channel-field">
+            <span class="meridian-channel-scroll">
+              <span class="meridian-channel-prefix">twitch.tv/</span>
+              <input class="meridian-channel" value="eslcs" spellcheck="false" readonly />
+            </span>
+            <button class="meridian-channel-follow" title="Follow on Twitch"><svg viewBox="0 0 24 24" width="10" height="10"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></button>
+          </span>
+          <div class="meridian-delay" title="Chat delay (seconds)">
+            <span class="meridian-delay-icon">⏱</span>
+            <button class="meridian-btn" tabindex="-1">−</button>
+            <input class="meridian-delay-val" type="text" value="12s" spellcheck="false" readonly />
+            <button class="meridian-btn" tabindex="-1">+</button>
           </div>
-          <div class="card">
-            <h3>Rich Emote Support</h3>
-            <p>Native Twitch emotes plus 7TV, BetterTTV, and FrankerFaceZ &mdash; global and per-channel sets, each provider individually toggleable.</p>
-          </div>
-          <div class="card">
-            <h3>Timeline Highlights</h3>
-            <p>A chat-activity wave drawn over the YouTube seekbar. Emote surges are pinned as clickable markers &mdash; click to seek straight to the hype moment.</p>
-          </div>
-          <div class="card">
-            <h3>Chat Delay Sync</h3>
-            <p>Dial in 0&ndash;600 s of chat delay to sync messages with a delayed stream or re-broadcast.</p>
-          </div>
-          <div class="card">
-            <h3>Auto Channel Mapping</h3>
-            <p>Automatically maps YouTube channel handles and Kick slugs to the right Twitch channel. Override per-page anytime.</p>
-          </div>
-          <div class="card">
-            <h3>Private by Design</h3>
-            <p>No servers, no analytics, no data leaves your browser. Read chat anonymously without connecting an account. <a href="privacy/">Full privacy policy &rarr;</a></p>
-          </div>
+          <button class="meridian-btn" tabindex="-1" title="Dock / undock">⧉</button>
+          <button class="meridian-btn" tabindex="-1" title="Reconnect">↻</button>
+          <button class="meridian-btn" tabindex="-1" title="Hide">×</button>
+        </div>
+        <div class="meridian-viewers" title="Live viewers on Twitch">
+          <svg class="meridian-viewers-eye" viewBox="0 0 24 24" width="11" height="11" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          <span class="meridian-viewers-count">38,204</span>
+        </div>
+        <div class="meridian-messages" id="heroMessages"></div>
+        <div class="meridian-input-wrap">
+          <div class="meridian-input" role="textbox" data-placeholder="Send a message…"></div>
+          <button class="meridian-send" tabindex="-1" title="Send"><svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2z"></path></svg></button>
         </div>
       </div>
-    </section>
-
-    <section class="permissions">
-      <div class="container">
-        <h2>Permissions</h2>
-        <table>
-          <thead>
-            <tr><th>Permission</th><th>Why it's needed</th></tr>
-          </thead>
-          <tbody>
-            <tr><td><code>storage</code></td><td>Save your preferences and a 24-hour emote cache.</td></tr>
-            <tr><td><code>identity</code></td><td>Run Twitch's official OAuth flow when you click <strong>Connect Twitch</strong>. No cookies read.</td></tr>
-            <tr><td><code>activeTab</code></td><td>Read the current tab's host to show per-site settings.</td></tr>
-            <tr><td>youtube.com, kick.com</td><td>Inject the overlay on watch and channel pages.</td></tr>
-            <tr><td>*.twitch.tv</td><td>Validate the OAuth token, fetch your display name, connect to chat.</td></tr>
-            <tr><td>7tv.io, betterttv.net, frankerfacez.com</td><td>Fetch public emote sets.</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-  </main>
-
-  <footer>
-    <div class="container">
-      <p>&copy; 2026 Meridian &bull; <a href="privacy/">Privacy Policy</a></p>
     </div>
-  </footer>
+  </div>
+</section>
+
+<!-- ============ SOURCE STRIP ============ -->
+<div class="strip">
+  <div class="wrap strip-inner">
+    <div class="strip-flow">
+      <div class="flow-group">
+        <span class="flow-label">Chat from</span>
+        <span class="src-badge"><span class="sw" style="background:var(--twitch)"></span> Twitch</span>
+      </div>
+      <span class="flow-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      <div class="flow-group">
+        <span class="flow-label">Emotes from</span>
+        <span class="src-badge"><span class="sw" style="background:var(--twitch)"></span> Twitch</span>
+        <span class="src-badge"><span class="sw" style="background:#29B6F6"></span> 7TV</span>
+        <span class="src-badge"><span class="sw" style="background:#D50014"></span> BetterTTV</span>
+        <span class="src-badge"><span class="sw" style="background:#1E69FF"></span> FrankerFaceZ</span>
+      </div>
+      <span class="flow-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      <div class="flow-group">
+        <span class="flow-label">On</span>
+        <span class="src-badge"><span class="sw" style="background:var(--youtube)"></span> YouTube</span>
+        <span class="src-badge"><span class="sw" style="background:var(--kick)"></span> Kick</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ FEATURES ============ -->
+<section class="features" id="features">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow"><span class="dot"></span> Features</span>
+      <h2>Built for how you watch.</h2>
+      <p>Overlay or docked, full third-party emotes, chat delay, and live highlights — all on the player.</p>
+    </div>
+
+    <div class="bento">
+      <!-- 1. emotes (wide) -->
+      <article class="card span-3">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/></svg></div>
+        <h3>Twitch chat on YouTube</h3>
+        <p>Live Twitch chat with badges, colors and case-correct names — rendered with native Twitch emotes plus full 7TV, BetterTTV and FrankerFaceZ sets, right over the YouTube or Kick player.</p>
+        <div class="emote-row">
+          <span class="prov"><span class="chip" style="background:linear-gradient(135deg,#A970FF,#7A4EF0)"></span> 7TV</span>
+          <span class="prov"><span class="chip" style="background:linear-gradient(135deg,#FF6B9D,#FF3B6B)"></span> BetterTTV</span>
+          <span class="prov"><span class="chip" style="background:linear-gradient(135deg,#6BD0FF,#3B82F6)"></span> FrankerFaceZ</span>
+        </div>
+        <div class="emote-tray">
+          <span class="e" style="background:linear-gradient(135deg,#FFCB3B,#FF8A3B)"></span>
+          <span class="e" style="background:linear-gradient(135deg,#5CE0A0,#2FB36B)"></span>
+          <span class="e" style="background:linear-gradient(135deg,#FF6B9D,#FF3B6B)"></span>
+          <span class="e" style="background:linear-gradient(135deg,#A970FF,#7A4EF0)"></span>
+          <span class="e" style="background:linear-gradient(135deg,#6BD0FF,#3B82F6)"></span>
+          <span class="e" style="background:linear-gradient(135deg,#FFD86B,#E8A13A)"></span>
+        </div>
+      </article>
+
+      <!-- 2. delay -->
+      <article class="card span-3">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+        <h3>Configurable chat delay</h3>
+        <p>Sync the conversation with a delayed stream. A client-side queue from real-time up to ten minutes, adjustable from the overlay header.</p>
+        <div class="delay-demo"><span class="v">12</span><span class="u">seconds</span></div>
+        <div class="delay-scale"><div class="fill"></div></div>
+        <div class="delay-range"><span>0 = real-time</span><span>600s</span></div>
+      </article>
+
+      <!-- 3. overlay & docked (wide) -->
+      <article class="card span-3">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><rect x="13" y="7" width="5" height="10" rx="1"/></svg></div>
+        <h3>Overlay &amp; docked modes</h3>
+        <p>Float a transparent panel over the video, or dock it inside the site's native chat frame with a tab switcher. Dial in background opacity, blur and font size until it sits perfectly either way.</p>
+        <div class="mode-tabs">
+          <span class="t on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><rect x="12" y="8" width="6" height="6" rx="1"/></svg> Overlay</span>
+          <span class="t"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16"/></svg> Docked</span>
+        </div>
+        <div class="tune">
+          <div class="tune-row">
+            <div class="lab"><span class="n">Background opacity</span><span class="vv">74%</span></div>
+            <div class="tune-bar"><div class="f" style="width:74%"></div><div class="knob" style="left:74%"></div></div>
+          </div>
+          <div class="tune-row">
+            <div class="lab"><span class="n">Background blur</span><span class="vv">16px</span></div>
+            <div class="tune-bar"><div class="f" style="width:62%"></div><div class="knob" style="left:62%"></div></div>
+          </div>
+        </div>
+      </article>
+
+      <!-- 4. emote highlights -->
+      <article class="card span-3">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg></div>
+        <h3>Emote highlights</h3>
+        <p>When enough unique viewers spam one emote in a short window, Meridian pins a marker on the YouTube seekbar at that exact moment. Click it to jump straight to the surge — or replay the highlights on the VOD afterwards.</p>
+        <p class="help">YouTube only</p>
+        <!-- wave + emote markers + surge stats popup (verbatim extension markup) -->
+        <div class="wave-demo">
+          <div class="meridian-wave-layer">
+            <svg class="meridian-wave-svg" preserveAspectRatio="none" viewBox="0 0 100 100">
+              <defs>
+                <linearGradient id="meridianWaveGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#b388ff" stop-opacity="1"/>
+                  <stop offset="18%" stop-color="#b388ff" stop-opacity="0.72"/>
+                  <stop offset="45%" stop-color="#b388ff" stop-opacity="0.42"/>
+                  <stop offset="100%" stop-color="#b388ff" stop-opacity="0.16"/>
+                </linearGradient>
+              </defs>
+              <path class="meridian-wave-path" fill="url(#meridianWaveGrad)" d="M 0 100 L 0 82 Q 0 82 4 78 Q 8 74 12 66 Q 16 58 20 49 Q 24 40 28 35 Q 32 30 36 38 Q 40 46 44 54 Q 48 62 52 53 Q 56 44 60 35 Q 64 26 68 34 Q 72 42 76 36 Q 80 30 84 41 Q 88 52 92 61 Q 96 70 98 73 L 100 76 L 100 100 Z"/>
+              <path class="meridian-wave-topline" stroke="#b388ff" d="M 0 82 Q 0 82 4 78 Q 8 74 12 66 Q 16 58 20 49 Q 24 40 28 35 Q 32 30 36 38 Q 40 46 44 54 Q 48 62 52 53 Q 56 44 60 35 Q 64 26 68 34 Q 72 42 76 36 Q 80 30 84 41 Q 88 52 92 61 Q 96 70 98 73 L 100 76"/>
+            </svg>
+            <div class="meridian-wave-emotes">
+              <!-- marker 1 -->
+              <div class="meridian-wave-stem" style="left:24%; bottom:22px; height:10px; background:linear-gradient(#b388ff, transparent)"></div>
+              <div class="meridian-wave-dot" style="left:24%; bottom:22px; background:#b388ff"></div>
+              <div class="meridian-wave-emote" style="left:24%; bottom:40px"><span class="m-emote" style="background:linear-gradient(135deg,#FFCB3B,#FF8A3B)"></span></div>
+              <!-- marker 2 (leader, has popup) -->
+              <div class="meridian-wave-stem" style="left:64%; bottom:23px; height:27px; background:linear-gradient(#b388ff, transparent)"></div>
+              <div class="meridian-wave-dot" style="left:64%; bottom:23px; background:#b388ff"></div>
+              <div class="meridian-wave-emote" style="left:64%; bottom:58px"><span class="m-emote" style="background:linear-gradient(135deg,#A970FF,#7A4EF0)"></span><span class="meridian-wave-badge">+3</span></div>
+              <!-- marker 3 -->
+              <div class="meridian-wave-stem" style="left:80%; bottom:22px; height:10px; background:linear-gradient(#b388ff, transparent)"></div>
+              <div class="meridian-wave-dot" style="left:80%; bottom:22px; background:#b388ff"></div>
+              <div class="meridian-wave-emote" style="left:80%; bottom:40px"><span class="m-emote" style="background:linear-gradient(135deg,#5CE0A0,#2FB36B)"></span></div>
+            </div>
+          </div>
+          <!-- surge stats popup, perched above the leader emote -->
+          <div class="meridian-surge-tip" style="left:64%; bottom:80px">
+            <div class="meridian-surge-tip-head">
+              <span class="m-emote" style="background:linear-gradient(135deg,#A970FF,#7A4EF0)"></span>
+              <div class="meridian-surge-tip-htxt">
+                <div class="meridian-surge-tip-name">POGGERS</div>
+                <div class="meridian-surge-tip-time">1:24:07</div>
+              </div>
+            </div>
+            <div class="meridian-surge-tip-cluster">
+              <span class="meridian-surge-tip-stack">
+                <span class="m-emote" style="background:linear-gradient(135deg,#FFCB3B,#FF8A3B)"></span>
+                <span class="m-emote" style="background:linear-gradient(135deg,#6BD0FF,#3B82F6)"></span>
+                <span class="m-emote" style="background:linear-gradient(135deg,#FF6B9D,#FF3B6B)"></span>
+              </span>
+              <span class="meridian-surge-tip-more">+5</span>
+            </div>
+            <div class="meridian-surge-tip-stats">
+              <div class="meridian-surge-tip-rate">1,240<span>msg/min</span></div>
+              <div class="meridian-surge-tip-uniq"><b>48</b> spamming</div>
+            </div>
+          </div>
+          <div class="seek-mock"><div class="played" style="width:42%"></div><div class="knob" style="left:42%"></div></div>
+        </div>
+      </article>
+
+      <!-- 5. timeline (full width) -->
+      <article class="card span-6">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h3l2-6 4 14 3-9 2 4h4"/></svg></div>
+        <h3>Chat intensity timeline</h3>
+        <p>A "most-replayed"-style density wave drawn over the live YouTube seekbar, scaled to chat messages-per-second — so you can see the hype before you scrub to it.</p>
+        <p class="help">YouTube only</p>
+        <!-- intensity wave + pinned emotes + popup (verbatim extension markup) -->
+        <div class="wave-demo wide">
+          <div class="meridian-wave-layer">
+            <svg class="meridian-wave-svg" preserveAspectRatio="none" viewBox="0 0 100 100">
+              <defs>
+                <linearGradient id="meridianWaveGrad2" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#b388ff" stop-opacity="1"/>
+                  <stop offset="18%" stop-color="#b388ff" stop-opacity="0.72"/>
+                  <stop offset="45%" stop-color="#b388ff" stop-opacity="0.42"/>
+                  <stop offset="100%" stop-color="#b388ff" stop-opacity="0.16"/>
+                </linearGradient>
+              </defs>
+              <path class="meridian-wave-path" fill="url(#meridianWaveGrad2)" d="M 0 100 L 0 82 Q 0 82 4 78 Q 8 74 12 66 Q 16 58 20 49 Q 24 40 28 35 Q 32 30 36 38 Q 40 46 44 54 Q 48 62 52 53 Q 56 44 60 35 Q 64 26 68 34 Q 72 42 76 36 Q 80 30 84 41 Q 88 52 92 61 Q 96 70 98 73 L 100 76 L 100 100 Z"/>
+              <path class="meridian-wave-topline" stroke="#b388ff" d="M 0 82 Q 0 82 4 78 Q 8 74 12 66 Q 16 58 20 49 Q 24 40 28 35 Q 32 30 36 38 Q 40 46 44 54 Q 48 62 52 53 Q 56 44 60 35 Q 64 26 68 34 Q 72 42 76 36 Q 80 30 84 41 Q 88 52 92 61 Q 96 70 98 73 L 100 76"/>
+            </svg>
+            <div class="meridian-wave-emotes">
+              <div class="meridian-wave-stem" style="left:12%; bottom:18px; height:14px; background:linear-gradient(#b388ff, transparent)"></div>
+              <div class="meridian-wave-dot" style="left:12%; bottom:18px; background:#b388ff"></div>
+              <div class="meridian-wave-emote" style="left:12%; bottom:40px"><span class="m-emote" style="background:linear-gradient(135deg,#6BD0FF,#3B82F6)"></span></div>
+
+              <div class="meridian-wave-stem" style="left:24%; bottom:22px; height:40px; background:linear-gradient(#b388ff, transparent)"></div>
+              <div class="meridian-wave-dot" style="left:24%; bottom:22px; background:#b388ff"></div>
+              <div class="meridian-wave-emote" style="left:24%; bottom:70px"><span class="m-emote" style="background:linear-gradient(135deg,#FFCB3B,#FF8A3B)"></span><span class="meridian-wave-badge">+2</span></div>
+
+              <div class="meridian-wave-stem" style="left:50%; bottom:21px; height:11px; background:linear-gradient(#b388ff, transparent)"></div>
+              <div class="meridian-wave-dot" style="left:50%; bottom:21px; background:#b388ff"></div>
+              <div class="meridian-wave-emote" style="left:50%; bottom:40px"><span class="m-emote" style="background:linear-gradient(135deg,#FF6B9D,#FF3B6B)"></span></div>
+
+              <!-- leader with popup -->
+              <div class="meridian-wave-stem" style="left:64%; bottom:23px; height:31px; background:linear-gradient(#b388ff, transparent)"></div>
+              <div class="meridian-wave-dot" style="left:64%; bottom:23px; background:#b388ff"></div>
+              <div class="meridian-wave-emote" style="left:64%; bottom:62px"><span class="m-emote" style="background:linear-gradient(135deg,#A970FF,#7A4EF0)"></span><span class="meridian-wave-badge">+7</span></div>
+
+              <div class="meridian-wave-stem" style="left:80%; bottom:22px; height:10px; background:linear-gradient(#b388ff, transparent)"></div>
+              <div class="meridian-wave-dot" style="left:80%; bottom:22px; background:#b388ff"></div>
+              <div class="meridian-wave-emote" style="left:80%; bottom:40px"><span class="m-emote" style="background:linear-gradient(135deg,#5CE0A0,#2FB36B)"></span></div>
+            </div>
+          </div>
+          <div class="meridian-surge-tip" style="left:64%; bottom:88px">
+            <div class="meridian-surge-tip-head">
+              <span class="m-emote" style="background:linear-gradient(135deg,#A970FF,#7A4EF0)"></span>
+              <div class="meridian-surge-tip-htxt">
+                <div class="meridian-surge-tip-name">POGGERS</div>
+                <div class="meridian-surge-tip-time">2:11:43</div>
+              </div>
+            </div>
+            <div class="meridian-surge-tip-cluster">
+              <span class="meridian-surge-tip-stack">
+                <span class="m-emote" style="background:linear-gradient(135deg,#FFCB3B,#FF8A3B)"></span>
+                <span class="m-emote" style="background:linear-gradient(135deg,#6BD0FF,#3B82F6)"></span>
+                <span class="m-emote" style="background:linear-gradient(135deg,#FF6B9D,#FF3B6B)"></span>
+              </span>
+              <span class="meridian-surge-tip-more">+9</span>
+            </div>
+            <div class="meridian-surge-tip-stats">
+              <div class="meridian-surge-tip-rate">2,380<span>msg/min</span></div>
+              <div class="meridian-surge-tip-uniq"><b>112</b> spamming</div>
+            </div>
+          </div>
+          <div class="seek-mock"><div class="played" style="width:58%"></div><div class="knob" style="left:58%"></div></div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CTA ============ -->
+<section class="cta">
+  <div class="wrap">
+    <div class="cta-box">
+      <div class="glow"></div>
+      <h2>Bring the chat with you.</h2>
+      <p>Install Meridian free from the Chrome Web Store, or grab the source on GitHub.</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary btn-lg" href="https://chromewebstore.google.com/detail/meridian-%E2%80%94-twitch-chat-fo/kopddoeajboelfpckaepggclkjekfoch" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><path d="M12 16v6M8.5 10 3.3 7M15.5 10 20.7 7"/></svg>
+          Add to Chrome
+        </a>
+        <a class="btn btn-ghost btn-lg" href="https://github.com/YashChaudhari241/meridian" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.48 2 2 6.58 2 12.25c0 4.53 2.87 8.37 6.84 9.73.5.1.68-.22.68-.49l-.01-1.9c-2.78.62-3.37-1.22-3.37-1.22-.46-1.18-1.11-1.5-1.11-1.5-.91-.64.07-.62.07-.62 1 .07 1.53 1.06 1.53 1.06.89 1.56 2.34 1.11 2.91.85.09-.66.35-1.11.63-1.36-2.22-.26-4.55-1.14-4.55-5.07 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.3.1-2.71 0 0 .84-.27 2.75 1.05a9.36 9.36 0 0 1 5 0c1.91-1.32 2.75-1.05 2.75-1.05.55 1.41.2 2.45.1 2.71.64.72 1.03 1.63 1.03 2.75 0 3.94-2.34 4.81-4.57 5.06.36.32.68.94.68 1.9l-.01 2.81c0 .27.18.6.69.49A10.03 10.03 0 0 0 22 12.25C22 6.58 17.52 2 12 2Z"/></svg>
+          View on GitHub
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer class="foot">
+  <div class="wrap foot-inner">
+    <div class="foot-brand">
+      <img src="assets/meridian-icon.svg" alt="" />
+      <span class="n">Meridian</span>
+    </div>
+    <nav class="foot-links">
+      <a href="#features">Features</a>
+      <a href="privacy/index.html">Privacy policy</a>
+      <a href="https://chromewebstore.google.com/detail/meridian-%E2%80%94-twitch-chat-fo/kopddoeajboelfpckaepggclkjekfoch" target="_blank" rel="noopener">Chrome Web Store</a>
+      <a href="https://github.com/YashChaudhari241/meridian" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+  <div class="wrap foot-copy">Meridian is an independent open-source project. Twitch, YouTube and Kick are trademarks of their respective owners.</div>
+</footer>
+
+<!-- Drives the hero chat overlay: appends messages at the bottom and jumps to the
+     bottom instantly (no smooth-scroll), exactly like the live extension. -->
+<script>
+(function () {
+  var box = document.getElementById('heroMessages');
+  if (!box) return;
+
+  // Emote stand-ins (colored rounded rectangles): name -> [background, width in em]
+  var EMOTES = {
+    LULLUL:     ['linear-gradient(135deg,#FFE08A,#F5B324)', 2.0],
+    PepeLaugh:  ['linear-gradient(135deg,#FFD9B0,#FFB36B)', 1.8],
+    KKonaW:     ['linear-gradient(135deg,#86E08A,#36B24A)', 1.7],
+    BlameFamas: ['linear-gradient(135deg,#9AA7FF,#5C6CE0)', 2.1]
+  };
+  var EMOTE_NAMES = Object.keys(EMOTES).sort(function (a, b) { return b.length - a.length; });
+
+  var MSGS = [
+    ['AwakenMagic', '!maps'],
+    ['Fossabot', '@AwakenMagic 1. BIG picked Dust2 | 2. NRG picked Nuke | 3. Mirage is the decider'],
+    ['marsupaani', 'When will the best NA team, Liquid play?'],
+    ['nenadiy', 'i think 3rd map incoming'],
+    ['m3sh_xd', 'NA MAP NRGEZ'],
+    ['swiftyk79', 'BIG I NEED THIS DUB TO GET 5 PICKEMS RIGHT'],
+    ['DE_AIRPORT', '@knedla_02 can u read just once on the top left of stream please'],
+    ['migL12', 'BlameFamas'],
+    ['FoundTheWeed', '@raydagoat2314 dont do dat'],
+    ['Pyrite19', "let's go RNG"],
+    ['doperoCS', '@marsupaani 2018'],
+    ['tranda__', "i've put my bmw on nrg"],
+    ['supersnaxbosssigmawuc', '@raydagoat2314 opposite of who you bet on'],
+    ['botato_twitch', 'someone said someone said no bait no kill LULLUL'],
+    ['flammx', '@marsupaani PepeLaughPepeLaugh'],
+    ['r3b0rN_1337', 'BRING THE NRG KKonaWKKonaW'],
+    ['RoxaSoraa', 'baitf zero impact stats player'],
+    ['CreatureFGC', '@marsupaani Probably never again'],
+    ['DE_AIRPORT', '@nenadiy nah NA de_airport happening after this map'],
+    ['aleandro587', 'SO EZEZ'],
+    ['Rob_Bob_The_Corncob_Man', 'is osee still the AWP hope of NA?'],
+    ['drunkenct', 'they are loiterally playing with them with these rotates'],
+    ['aceg19', 'team liquid will destroy this teams LULLUL'],
+    ['ThelKinG_', 'hahahhahahahhaa']
+  ];
+
+  // Stable per-name color, like Twitch's default name coloring.
+  function colorFor(name) {
+    if (name.toLowerCase() === 'fossabot') return '#4FD08A'; // bot → mod-green
+    var h = 0;
+    for (var i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+    return 'hsl(' + (h % 360) + ' 68% 66%)';
+  }
+
+  // Decompose a whitespace token into a run of known emote names (handles glued
+  // repeats like "PepeLaughPepeLaugh" / "KKonaWKKonaW"). Returns null if not all emote.
+  function emoteRun(tok) {
+    var out = [], i = 0;
+    while (i < tok.length) {
+      var hit = null;
+      for (var k = 0; k < EMOTE_NAMES.length; k++) {
+        var n = EMOTE_NAMES[k];
+        if (tok.substr(i, n.length) === n) { hit = n; break; }
+      }
+      if (!hit) return null;
+      out.push(hit); i += hit.length;
+    }
+    return out.length ? out : null;
+  }
+  function emoteSpan(name) {
+    var d = EMOTES[name];
+    var s = document.createElement('span');
+    s.className = 'meridian-emote';
+    s.style.width = d[1] + 'em';
+    s.style.background = d[0];
+    s.title = name;
+    return s;
+  }
+  function renderText(container, text) {
+    var toks = text.split(/(\s+)/); // keep whitespace
+    for (var i = 0; i < toks.length; i++) {
+      var tok = toks[i];
+      if (!tok) continue;
+      if (/^\s+$/.test(tok)) { container.appendChild(document.createTextNode(tok)); continue; }
+      var run = emoteRun(tok);
+      if (run) { for (var j = 0; j < run.length; j++) container.appendChild(emoteSpan(run[j])); }
+      else container.appendChild(document.createTextNode(tok));
+    }
+  }
+
+  var idx = 0;
+  function add() {
+    var m = MSGS[idx % MSGS.length]; idx++;
+    var el = document.createElement('div');
+    el.className = 'meridian-msg';
+    var name = document.createElement('span');
+    name.className = 'meridian-name';
+    name.textContent = m[0];
+    name.style.color = colorFor(m[0]);
+    var sep = document.createElement('span');
+    sep.className = 'meridian-sep';
+    sep.textContent = ':';
+    var text = document.createElement('span');
+    text.className = 'meridian-text';
+    renderText(text, m[1]);
+    el.appendChild(name);
+    el.appendChild(sep);
+    el.appendChild(text);
+    box.appendChild(el);
+    while (box.children.length > 60) box.removeChild(box.firstChild);
+    box.scrollTop = box.scrollHeight; // pop to bottom — no animation
+  }
+
+  for (var p = 0; p < 18; p++) add(); // prefill so the panel starts full
+  setInterval(add, 1500);
+})();
+</script>
+
 </body>
 </html>

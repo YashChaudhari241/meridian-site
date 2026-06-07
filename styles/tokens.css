@@ -1,0 +1,139 @@
+/* ============================================================
+   MERIDIAN — Colors & Type
+   Chrome extension: Twitch chat on YouTube & Kick.
+   Dark by default. Purple accent. Minimal.
+   Load AFTER the Geist webfont (see fonts note in README).
+   ============================================================ */
+
+/* Geist + Geist Mono via Google Fonts (substitute — see README "Fonts") */
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap');
+
+:root {
+  /* ---------- BRAND / ACCENT ----------
+     Meridian Violet — distinct from Twitch #9146FF: cooler, more
+     electric-indigo. This is THE brand color. Use sparingly: one
+     accent action per view. */
+  --violet-50:  #F1ECFF;
+  --violet-100: #E1D6FF;
+  --violet-200: #C6B0FF;
+  --violet-300: #A98AFF;
+  --violet-400: #9270FF;
+  --violet-500: #8257FF;  /* primary */
+  --violet-600: #6F40F2;  /* hover/press-deep */
+  --violet-700: #5B30D6;
+  --violet-800: #46259E;
+  --violet-900: #2F1A66;
+
+  --accent:        var(--violet-500);
+  --accent-hover:  var(--violet-400);
+  --accent-press:  var(--violet-600);
+  --accent-soft:   color-mix(in oklab, var(--violet-500) 16%, transparent);
+  --accent-ring:   color-mix(in oklab, var(--violet-500) 55%, transparent);
+  --on-accent:     #FFFFFF;
+
+  /* ---------- SURFACES (dark, default) ----------
+     Near-neutral with a whisper of violet so the dark feels brand-tinted,
+     not flat black. Ascending = more elevated. */
+  --bg-0: #0C0C0F;   /* page / behind popup */
+  --bg-1: #141417;   /* popup body, overlay panel */
+  --bg-2: #1B1B20;   /* cards, section blocks */
+  --bg-3: #232329;   /* inputs, raised rows */
+  --bg-4: #2D2D34;   /* hover on raised, menus */
+
+  --border-1: #2A2A31;  /* hairline dividers */
+  --border-2: #38383F;  /* input borders, card edges */
+  --border-strong: #4A4A52;
+
+  /* ---------- TEXT ---------- */
+  --fg-1: #F5F5F6;   /* primary headings, values */
+  --fg-2: #B4B4BC;   /* body, labels */
+  --fg-3: #82828C;   /* helper/caption text */
+  --fg-4: #5C5C65;   /* disabled, placeholders */
+  --on-violet: #FFFFFF;
+
+  /* ---------- SEMANTIC ---------- */
+  --success: #41C46B;
+  --success-soft: color-mix(in oklab, var(--success) 16%, transparent);
+  --warning: #E8A13A;
+  --warning-soft: color-mix(in oklab, var(--warning) 16%, transparent);
+  --danger:  #F0556A;
+  --danger-soft: color-mix(in oklab, var(--danger) 16%, transparent);
+  --info:    #4C9DF0;
+
+  /* ---------- PLATFORM ACCENTS (third-party brands) ---------- */
+  --twitch:  #9146FF;
+  --youtube: #FF0033;
+  --kick:    #53FC18;
+
+  /* ---------- ELEVATION / SHADOW ---------- */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.35);
+  --shadow-md: 0 6px 20px rgba(0,0,0,.45);
+  --shadow-lg: 0 16px 48px rgba(0,0,0,.55);
+  --shadow-pop: 0 12px 40px rgba(0,0,0,.5), 0 0 0 1px var(--border-1);
+  --glow-accent: 0 0 0 3px var(--accent-ring);
+
+  /* ---------- RADII ---------- */
+  --r-xs: 5px;
+  --r-sm: 7px;
+  --r-md: 10px;   /* default: inputs, buttons */
+  --r-lg: 14px;   /* cards, section blocks */
+  --r-xl: 18px;   /* popup body, overlay panel */
+  --r-pill: 999px;
+
+  /* ---------- SPACING (4px base) ---------- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+
+  /* ---------- TYPE ---------- */
+  --font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --text-xs:   11px;
+  --text-sm:   13px;
+  --text-base: 14px;   /* extension UI default */
+  --text-md:   15px;
+  --text-lg:   17px;
+  --text-xl:   20px;
+  --text-2xl:  24px;
+  --text-3xl:  30px;
+
+  --lh-tight: 1.2;
+  --lh-snug:  1.35;
+  --lh-normal: 1.5;
+
+  --motion-fast: 110ms;
+  --motion: 180ms;
+  --ease: cubic-bezier(.2,.6,.2,1);
+}
+
+/* ============================================================
+   SEMANTIC ELEMENT STYLES — opt in via .ms- prefix so this file
+   never fights a host page (the extension injects into YT/Kick).
+   ============================================================ */
+
+.ms-root, .ms-ui {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--lh-normal);
+  color: var(--fg-2);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.ms-h1 { font: 700 var(--text-2xl)/var(--lh-tight) var(--font-sans); color: var(--fg-1); letter-spacing: -.02em; margin: 0; }
+.ms-h2 { font: 600 var(--text-xl)/var(--lh-tight) var(--font-sans); color: var(--fg-1); letter-spacing: -.015em; margin: 0; }
+.ms-h3 { font: 600 var(--text-lg)/var(--lh-snug) var(--font-sans); color: var(--fg-1); letter-spacing: -.01em; margin: 0; }
+.ms-label { font: 500 var(--text-base)/var(--lh-snug) var(--font-sans); color: var(--fg-1); margin: 0; }
+.ms-body { font: 400 var(--text-base)/var(--lh-normal) var(--font-sans); color: var(--fg-2); margin: 0; }
+.ms-help { font: 400 var(--text-sm)/var(--lh-normal) var(--font-sans); color: var(--fg-3); margin: 0; }
+.ms-mono { font: 500 var(--text-base)/1.4 var(--font-mono); color: var(--fg-1); font-variant-numeric: tabular-nums; }
+.ms-eyebrow {
+  font: 600 var(--text-xs)/1 var(--font-sans);
+  letter-spacing: .14em; text-transform: uppercase; color: var(--fg-3); margin: 0;
+}

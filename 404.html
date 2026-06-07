@@ -1,31 +1,46 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Page Not Found — Meridian</title>
-  <link rel="stylesheet" href="style.css" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Page Not Found — Meridian</title>
+<link rel="icon" type="image/svg+xml" href="/assets/meridian-icon.svg" />
+<link rel="stylesheet" href="/styles/tokens.css" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: grid; place-items: center;
+    background: var(--bg-0); color: var(--fg-2);
+    font-family: var(--font-sans); -webkit-font-smoothing: antialiased;
+  }
+  .panel { text-align: center; padding: 0 28px; position: relative; }
+  .glow { position: absolute; inset: -60% 0 auto 0; height: 120%; background: radial-gradient(closest-side, color-mix(in oklab, var(--violet-500) 22%, transparent), transparent 70%); filter: blur(20px); pointer-events: none; }
+  .brand { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 28px; }
+  .brand img { width: 30px; height: 30px; border-radius: 8px; }
+  .brand .name { font-weight: 600; font-size: 17px; color: var(--fg-1); }
+  .code { position: relative; font-family: var(--font-mono); font-size: clamp(56px, 12vw, 96px); font-weight: 600; color: var(--fg-1); letter-spacing: -.04em; line-height: 1; }
+  h1 { position: relative; margin: 14px 0 0; font-size: clamp(22px, 4vw, 30px); font-weight: 700; letter-spacing: -.02em; color: var(--fg-1); }
+  p { position: relative; margin: 14px 0 0; font-size: var(--text-lg); color: var(--fg-3); }
+  .btn { position: relative; display: inline-flex; align-items: center; gap: 9px; margin-top: 28px; font-size: var(--text-md); font-weight: 600; padding: 14px 22px; border-radius: 12px; background: var(--accent); color: var(--on-accent); box-shadow: 0 1px 0 rgba(255,255,255,.08) inset, var(--shadow-sm); transition: background var(--motion) var(--ease), transform var(--motion) var(--ease); }
+  .btn:hover { background: var(--accent-hover); transform: translateY(-1px); }
+  .btn svg { width: 18px; height: 18px; }
+  a { text-decoration: none; }
+</style>
 </head>
 <body>
-  <header>
-    <div class="container">
-      <a href="." class="logo">Meridian</a>
-      <nav><a href="privacy/">Privacy Policy</a></nav>
-    </div>
-  </header>
-  <main>
-    <section class="hero">
-      <div class="container">
-        <h1>Page Not Found</h1>
-        <p class="tagline">The page you're looking for doesn't exist.</p>
-        <a class="cta" href=".">Go Home</a>
-      </div>
-    </section>
-  </main>
-  <footer>
-    <div class="container">
-      <p>&copy; 2026 Meridian &bull; <a href="privacy/">Privacy Policy</a></p>
-    </div>
-  </footer>
+  <div class="panel">
+    <div class="glow"></div>
+    <a class="brand" href="/">
+      <img src="/assets/meridian-icon.svg" alt="Meridian" />
+      <span class="name">Meridian</span>
+    </a>
+    <div class="code">404</div>
+    <h1>Page not found</h1>
+    <p>The page you're looking for doesn't exist.</p>
+    <a class="btn" href="/">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7M5 12h14"/></svg>
+      Go home
+    </a>
+  </div>
 </body>
 </html>
